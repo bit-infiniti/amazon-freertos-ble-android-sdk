@@ -116,6 +116,17 @@ public class AmazonFreeRTOSDevice {
     private KeyStore mKeystore;
 
     /**
+     * Construct an AmazonFreeRTOSDevice instance without connecting to AWS IoT.
+     * @param context The app context. Should be passed in by the app that creates a new instance
+     *                of AmazonFreeRTOSDevice.
+     * @param device BluetoothDevice returned from BLE scan result.
+     *
+     */
+    AmazonFreeRTOSDevice(@NonNull BluetoothDevice device, @NonNull Context context) {
+        this(device, context, null, null);
+    }
+
+    /**
      * Construct an AmazonFreeRTOSDevice instance.
      * @param context The app context. Should be passed in by the app that creates a new instance
      *                of AmazonFreeRTOSDevice.
@@ -167,7 +178,11 @@ public class AmazonFreeRTOSDevice {
         mRxLargeObject = null;
         mTotalPackets = 0;
         mPacketCount = 1;
-        mContext.unregisterReceiver(mBondStateBroadcastReceiver);
+        try {
+            mContext.unregisterReceiver(mBondStateBroadcastReceiver);
+        } catch (IllegalArgumentException ex) {
+            Log.e(TAG, "receiver not registered");
+        }
         if (mBluetoothGatt != null) {
             mBluetoothGatt.close();
             mBluetoothGatt = null;
@@ -1057,9 +1072,13 @@ public class AmazonFreeRTOSDevice {
                     } else {
                         bleCommand = mMqttQueue.poll();
                     }
-                    Log.d(TAG, "Processing BLE command: " + bleCommand.getType()
-                            + " remaining mqtt queue " + mMqttQueue.size()
-                            + ", network queue " + mNetworkQueue.size());
+                    try {
+                        Log.d(TAG, "Processing BLE command: " + bleCommand.getType()
+                                + " remaining mqtt queue " + mMqttQueue.size()
+                                + ", network queue " + mNetworkQueue.size());
+                    } catch (NullPointerException ex) {
+                        Log.d(TAG, "no BLE command");
+                    }
                     boolean commandSent = false;
                     switch (bleCommand.getType()) {
                         case WRITE_DESCRIPTOR:
@@ -1210,6 +1229,9 @@ public class AmazonFreeRTOSDevice {
     }
 
     private static String bytesToHexString(byte[] bytes) {
+        if (bytes == null) {
+            return "No data";
+        }
         StringBuilder sb = new StringBuilder(bytes.length * 2);
         Formatter formatter = new Formatter(sb);
         for (int i =0; i< bytes.length; i++) {

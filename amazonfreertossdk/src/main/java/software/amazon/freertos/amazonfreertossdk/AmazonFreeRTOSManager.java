@@ -176,6 +176,22 @@ public class AmazonFreeRTOSManager {
      * @param connectionStatusCallback The callback to notify app whether the BLE connection is
      *                                 successful. Must not be null.
      * @param btDevice the BLE device to be connected to.
+     * @param autoReconnect auto reconnect to device after unexpected disconnect
+     */
+    public AmazonFreeRTOSDevice connectToDevice(@NonNull final BluetoothDevice btDevice,
+                                                @NonNull final BleConnectionStatusCallback connectionStatusCallback,
+                                                final boolean autoReconnect) {
+        AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext);
+        mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
+        aDevice.connect(connectionStatusCallback, autoReconnect);
+        return aDevice;
+    }
+
+    /**
+     * Connect to the BLE device, and notify the connection state via BleConnectionStatusCallback.
+     * @param connectionStatusCallback The callback to notify app whether the BLE connection is
+     *                                 successful. Must not be null.
+     * @param btDevice the BLE device to be connected to.
      * @param cp the AWSCredential used to connect to AWS IoT.
      * @param autoReconnect auto reconnect to device after unexpected disconnect
      */
