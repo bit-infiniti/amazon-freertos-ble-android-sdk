@@ -62,10 +62,10 @@ public class WifiProvisionFragment extends Fragment {
         public WifiInfoHolder(LayoutInflater inflater, ViewGroup parent, Fragment fragment) {
             super(inflater.inflate(R.layout.list_wifi_info, parent, false));
             mHostingFragment = fragment;
-            mSsidTextView = (TextView) itemView.findViewById(R.id.ssid_name);
-            mRssiTextView = (TextView) itemView.findViewById(R.id.rssi_value);
-            mBssidTextView = (TextView) itemView.findViewById(R.id.bssid_name);
-            mNetworkTypeTextView = (TextView) itemView.findViewById(R.id.network_type);
+            mSsidTextView = itemView.findViewById(R.id.ssid_name);
+            mRssiTextView = itemView.findViewById(R.id.rssi_value);
+            mBssidTextView = itemView.findViewById(R.id.bssid_name);
+            mNetworkTypeTextView = itemView.findViewById(R.id.network_type);
             itemView.setOnClickListener(this);
         }
 
@@ -75,20 +75,18 @@ public class WifiProvisionFragment extends Fragment {
             mRssiTextView.setText(getResources().getString(R.string.rssi_value, mWifiInfo.getRssi()));
             mBssidTextView.setText(bssidToString(mWifiInfo.getBssid()));
             mNetworkTypeTextView.setText(mWifiInfo.getNetworkTypeName());
+            int color = Color.GRAY;
             if (SAVED_NETWORK_RSSI == mWifiInfo.getRssi()) {
-                int colorAccent = getResources().getColor(R.color.colorAccent, null);
-                mSsidTextView.setTextColor(colorAccent);
-                mBssidTextView.setTextColor(colorAccent);
-                mRssiTextView.setTextColor(colorAccent);
-                mNetworkTypeTextView.setTextColor(colorAccent);
+                color = getResources().getColor(R.color.colorAccent, null);
             }
             if (mWifiInfo.isConnected()) {
-                int colorPrimary = getResources().getColor(R.color.colorPrimary, null);
-                mSsidTextView.setTextColor(colorPrimary);
-                mBssidTextView.setTextColor(colorPrimary);
-                mRssiTextView.setTextColor(colorPrimary);
-                mNetworkTypeTextView.setTextColor(colorPrimary);
+                color = getResources().getColor(R.color.colorActive, null);
             }
+            mSsidTextView.setTextColor(color);
+            mBssidTextView.setTextColor(color);
+            mRssiTextView.setTextColor(color);
+            mNetworkTypeTextView.setTextColor(color);
+
         }
 
         @Override
@@ -244,7 +242,7 @@ public class WifiProvisionFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_wifi_provision, container, false);
-        mWifiInfoRecyclerView = (RecyclerView) view.findViewById(R.id.wifi_recycler_view);
+        mWifiInfoRecyclerView = view.findViewById(R.id.wifi_recycler_view);
         mWifiInfoRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         mWifiInfoAdapter = new WifiInfoAdapter(mWifiInfoList, this);
         mWifiInfoRecyclerView.setAdapter(mWifiInfoAdapter);
@@ -331,7 +329,7 @@ public class WifiProvisionFragment extends Fragment {
     private void listNetworks() {
         mWifiInfoList.clear();
         ListNetworkReq listNetworkReq = new ListNetworkReq();
-        listNetworkReq.maxNetworks = 20;
+        listNetworkReq.maxNetworks = 5;
         listNetworkReq.timeout = 5;
         if (mDevice != null) {
             mDevice.listNetworks(listNetworkReq, mNetworkConfigCallback);
