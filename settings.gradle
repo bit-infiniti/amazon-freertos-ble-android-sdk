@@ -1,1 +1,2 @@
-include ':app'
+include ':app', ':amazonfreertossdk1'
+project(':amazonfreertossdk1').projectDir = new File('amazonfreertossdk')

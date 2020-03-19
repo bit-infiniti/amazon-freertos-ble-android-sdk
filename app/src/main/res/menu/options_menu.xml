@@ -6,7 +6,7 @@
         android:title="@string/wifi_provisioning_menu_text" />
 
     <item
-        android:id="@+id/mqtt_proxy_menu_id"
-        android:title="@string/mqtt_proxy_menu_text" />
+        android:id="@+id/disconnect_menu_id"
+        android:title="@string/disconnect" />
 
 </menu>

@@ -1,4 +1,4 @@
-package software.amazon.freertos.demo;
+package wificonfig.bitinfiniti.com;
 
 import android.support.v4.app.Fragment;
 

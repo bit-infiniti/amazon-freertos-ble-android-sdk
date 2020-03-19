@@ -1,16 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="software.amazon.freertos.demo">
+          package="wificonfig.bitinfiniti.com">
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <!-- initiate device discovery and manipulate bluetooth settings -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <!-- allow scan BLE -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-
-    <!-- AWS Mobile SDK -->
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <uses-feature
         android:name="android.hardware.bluetooth_le"

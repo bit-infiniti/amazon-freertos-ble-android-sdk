@@ -28,6 +28,7 @@ import android.os.HandlerThread;
 import java.security.KeyStore;
 import java.util.Arrays;
 import android.os.ParcelUuid;
+import android.util.ArraySet;
 import android.util.Log;
 import com.amazonaws.auth.AWSCredentialsProvider;
 
@@ -68,6 +69,18 @@ public class AmazonFreeRTOSManager {
     public AmazonFreeRTOSManager(Context context, BluetoothAdapter bluetoothAdapter) {
         mContext = context;
         mBluetoothAdapter = bluetoothAdapter;
+    }
+
+    /**
+     * Retrieves BLE devices already bonded
+     * @return Set<BluetoothDevice> A set containing the bonded devices.
+     */
+    public java.util.Set<BluetoothDevice> getBondedDevices() {
+        /* TODO: Ensure only the right devices are returned */
+        if (mBluetoothAdapter != null) {
+            return mBluetoothAdapter.getBondedDevices();
+        }
+        return new ArraySet<BluetoothDevice>();
     }
 
     /**

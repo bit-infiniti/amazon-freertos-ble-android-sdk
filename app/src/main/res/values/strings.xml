@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">FreeRTOS Demo</string>
-    <string name="title">FreeRTOS demo app</string>
+    <string name="app_name">FreeRTOS WiFi Provisioning</string>
+    <string name="title">FreeRTOS WiFi Provisioning</string>
     <string name="scan_button">Scan for BLE devices</string>
     <string name="mqtt_switch">Mqtt Proxy</string>
     <string name="signout_button">Sign Out</string>
@@ -10,13 +10,14 @@
     <string name="device_mtu">MTU:  </string>
     <string name="set_mtu_menu_text">Set MTU</string>
     <string name="wifi_provisioning_menu_text">WiFi Provisioning</string>
-    <string name="mqtt_proxy_menu_text">MQTT Proxy</string>
-    <string name="menu">More...</string>
-
+    <string name="menu">&#8942;</string>
+    <string name="disconnect">Disconnect</string>
     <string name="ssid_name">SSID</string>
     <string name="rssi_value">RSSI: %1$d</string>
     <string name="bssid">BSSID</string>
-
+    <string name="disconnected">Disconnected</string>
+    <string name="connected">Connected</string>
+    <string name="connecting">Connecting</string>
     <string name="wifi_credential_dialog_title">Save WiFi network</string>
     <string name="password_hint">Password</string>
 </resources>
