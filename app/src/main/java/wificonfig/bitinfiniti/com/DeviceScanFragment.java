@@ -1,6 +1,7 @@
 package wificonfig.bitinfiniti.com;
 
 import android.Manifest;
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.ScanResult;
 import android.content.Intent;
@@ -13,22 +14,18 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.Switch;
 import android.widget.TextView;
-
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.NonNull;
 import software.amazon.freertos.amazonfreertossdk.AmazonFreeRTOSConstants;
 import software.amazon.freertos.amazonfreertossdk.AmazonFreeRTOSDevice;
 import software.amazon.freertos.amazonfreertossdk.AmazonFreeRTOSManager;
@@ -70,17 +67,16 @@ public class DeviceScanFragment extends Fragment {
         private boolean connecting = false;
         private AmazonFreeRTOSDevice aDevice = null;
 
-        public BleDeviceHolder(LayoutInflater inflater, ViewGroup parent) {
+        private BleDeviceHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_device, parent, false));
             mBleDeviceNameTextView = itemView.findViewById(R.id.device_name);
             mBleDeviceMacTextView = itemView.findViewById(R.id.device_mac);
-            mBleDeviceSwitch = itemView.findViewById(R.id.connect_switch);
             mMenuTextView = itemView.findViewById(R.id.menu_option);
             mDeviceInfo = itemView.findViewById(R.id.device_info);
             mConnectionStatus = itemView.findViewById(R.id.connection_status);
         }
 
-        public void bind(BleDevice bleDevice) {
+        private void bind(BleDevice bleDevice) {
             mBleDevice = bleDevice;
             mBleDeviceNameTextView.setText(mBleDevice.getName());
             mBleDeviceMacTextView.setText(mBleDevice.getMacAddr());
@@ -88,7 +84,7 @@ public class DeviceScanFragment extends Fragment {
 
             mDeviceInfo.setOnClickListener((View v) -> {
 
-                boolean autoReconnect = true;
+                boolean autoReconnect = false;
 
                 if (mConnStatus == ConnectionStatus.DISCONNECTED ) {
                     mConnStatus = ConnectionStatus.CONNECTING;
@@ -97,33 +93,6 @@ public class DeviceScanFragment extends Fragment {
                     });
                     aDevice = mAmazonFreeRTOSManager.connectToDevice(mBleDevice.getBluetoothDevice(),
                             connectionStatusCallback, autoReconnect);
-                }
-            });
-
-            mBleDeviceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                boolean autoReconnect = true;
-                @Override
-                public void onCheckedChanged(CompoundButton v, boolean isChecked) {
-                    Log.i(TAG, "connect switch isChecked: " + (isChecked ? "ON":"OFF"));
-                    if (isChecked) {
-                        getActivity().runOnUiThread(() -> {;
-                        mMenuTextView.setEnabled(true);
-                        mConnectionStatus.setText("Connected");
-                        mBleDeviceNameTextView.setTextColor(getResources().getColor(R.color.colorAccent, null));
-                        mMenuTextView.setTextColor(getResources().getColor(R.color.colorAccent, null)); });
-                    } else {
-                        mConnStatus = ConnectionStatus.DISCONNECTED;
-                        if (userDisconnect) {
-                            if (aDevice != null) {
-                                mAmazonFreeRTOSManager.disconnectFromDevice(aDevice);
-                                aDevice = null;
-                            }
-                        } else {
-
-                        }
-
-                        resetUI();
-                    }
                 }
             });
 
@@ -140,8 +109,9 @@ public class DeviceScanFragment extends Fragment {
                                 return true;
                             case R.id.disconnect_menu_id:
                                 Log.i(TAG, "Should disconnect here");
-                                userDisconnect = true;
-                                mBleDeviceSwitch.setChecked(false);
+                                //userDisconnect = true;
+                                mAmazonFreeRTOSManager.disconnectFromDevice(aDevice);
+                                //mBleDeviceSwitch.setChecked(false);
                                 return true;
                         }
                         return false;
@@ -158,38 +128,56 @@ public class DeviceScanFragment extends Fragment {
                 Log.i(TAG, "BLE connection status changed to: " + connectionStatus);
                 if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_CONNECTED) {
                     mConnStatus = ConnectionStatus.CONNECTED;
-                    getActivity().runOnUiThread(() -> {
-                        mBleDeviceSwitch.setChecked(true);
-                    });
+                    try {
+                        getActivity().runOnUiThread(() -> {
+                            mMenuTextView.setEnabled(true);
+                            mConnectionStatus.setText("Connected");
+                            mBleDeviceNameTextView.setTextColor(getResources().getColor(R.color.colorAccent, null));
+                            mMenuTextView.setTextColor(getResources().getColor(R.color.colorAccent, null));
+                        });
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
+                    }
                 } else if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED) {
-                    userDisconnect = false;
-                    getActivity().runOnUiThread(() -> {
-                        mBleDeviceSwitch.setChecked(false);
-                    });
+                    mConnStatus = ConnectionStatus.DISCONNECTED;
+                    try {
+                        getActivity().runOnUiThread(() -> {
+                            if (aDevice != null) {
+                                aDevice = null;
+                            }
+                            resetUI();
+                        });
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         };
 
         private void resetUI() {
-            getActivity().runOnUiThread( () -> {
-                mMenuTextView.setEnabled(false);
-                mMenuTextView.setTextColor(Color.GRAY);
-                mBleDeviceNameTextView.setTextColor(Color.GRAY);
-                //mBleDeviceSwitch.setChecked(false);
-                mConnectionStatus.setText("Disconnected");
-            });
+            try {
+                getActivity().runOnUiThread(() -> {
+                    mMenuTextView.setEnabled(false);
+                    mMenuTextView.setTextColor(Color.GRAY);
+                    mBleDeviceNameTextView.setTextColor(Color.GRAY);
+                    //mBleDeviceSwitch.setChecked(false);
+                    mConnectionStatus.setText("Disconnected");
+                });
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+            }
         }
 
     }
 
     private class BleDeviceAdapter extends RecyclerView.Adapter<BleDeviceHolder> {
         private List<BleDevice> mDeviceList;
-        public BleDeviceAdapter(List<BleDevice> devices) {
+        private BleDeviceAdapter(List<BleDevice> devices) {
             mDeviceList = devices;
         }
 
         @Override
-        public BleDeviceHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public BleDeviceHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
             return new BleDeviceHolder(layoutInflater, parent);
         }
@@ -238,7 +226,7 @@ public class DeviceScanFragment extends Fragment {
         mAmazonFreeRTOSManager = AmazonFreeRTOSAgent.getAmazonFreeRTOSManager(getActivity());
 
         //RecyclerView for displaying list of BLE devices.
-        mBleDeviceRecyclerView = (RecyclerView) view.findViewById(R.id.device_recycler_view);
+        mBleDeviceRecyclerView = view.findViewById(R.id.device_recycler_view);
         mBleDeviceRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
         mBleDeviceAdapter = new BleDeviceAdapter(mBleDevices);
@@ -290,7 +278,8 @@ public class DeviceScanFragment extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_ENABLE_BT) {
-            if (resultCode == getActivity().RESULT_OK) {
+            getActivity();
+            if (resultCode == Activity.RESULT_OK) {
                 Log.i(TAG, "Successfully enabled bluetooth");
             } else {
                 Log.w(TAG, "Failed to enable bluetooth");
@@ -300,17 +289,16 @@ public class DeviceScanFragment extends Fragment {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST_FINE_LOCATION: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.i(TAG, "ACCESS_FINE_LOCATION granted.");
-                } else {
-                    Log.w(TAG, "ACCESS_FINE_LOCATION denied");
-                    scanButton.setEnabled(false);
-                }
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == PERMISSION_REQUEST_FINE_LOCATION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.i(TAG, "ACCESS_FINE_LOCATION granted.");
+            } else {
+                Log.w(TAG, "ACCESS_FINE_LOCATION denied");
+                scanButton.setEnabled(false);
             }
         }
+
     }
 
 }
