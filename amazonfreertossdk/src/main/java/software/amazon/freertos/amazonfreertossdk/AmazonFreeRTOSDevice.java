@@ -180,10 +180,12 @@ public class AmazonFreeRTOSDevice {
         mTotalPackets = 0;
         mPacketCount = 1;
 
-
+        /**
+         * Call disconnect but not close. Close will be called in the Gatt callback.
+         * This allows Android to track the changes
+         */
         if (mBluetoothGatt != null) {
-            mBluetoothGatt.close();
-            mBluetoothGatt = null;
+            mBluetoothGatt.disconnect();
         }
 
         /**
