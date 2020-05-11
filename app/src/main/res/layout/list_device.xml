@@ -33,22 +33,13 @@
                     android:text="@string/device_name"
                     android:textStyle="bold" />
 
-                <Switch
-                    android:id="@+id/connect_switch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="20dp"
-                    android:checked="false"
-                    android:enabled="true"
-                    android:visibility="invisible"
-                    tools:visibility="invisible" />
-
                 <TextView
                     android:id="@+id/connection_status"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/disconnected" />
+                    android:text="@string/disconnected"
+                    android:textAlignment="textEnd" />
 
             </LinearLayout>
 
@@ -87,9 +78,9 @@
             android:id="@+id/menu_option"
             android:layout_width="20dp"
             android:layout_height="match_parent"
-            android:layout_marginLeft="5dp"
+            android:layout_marginStart="5dp"
             android:layout_marginTop="10dp"
-            android:layout_marginRight="20dp"
+            android:layout_marginEnd="20dp"
             android:gravity="end"
             android:text="@string/menu"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
