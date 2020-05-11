@@ -44,6 +44,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Formatter;
@@ -188,9 +189,11 @@ public class AmazonFreeRTOSDevice {
             mBluetoothGatt = null;
         }
         // If ble connection is closed, there's no need to keep mqtt connection open.
+        mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED;
         if (mMqttConnectionState != AmazonFreeRTOSConstants.MqttConnectionState.MQTT_Disconnected) {
             disconnectFromIot();
         }
+        mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
     }
 
     /**
@@ -308,7 +311,8 @@ public class AmazonFreeRTOSDevice {
                     int now = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
                     Log.d(TAG, "Bond state changed from " + prev + " to " + now);
                     if (prev == BluetoothDevice.BOND_BONDING && now == BluetoothDevice.BOND_BONDED) {
-                        initialize();
+                        discoverServices();
+                        //initialize();
                     }
                     break;
                 }
@@ -412,23 +416,29 @@ public class AmazonFreeRTOSDevice {
                                                     int newState) {
                     Log.i(TAG, "BLE connection state changed: " + status + "; new state: "
                             + AmazonFreeRTOSConstants.BleConnectionState.values()[newState]);
-                    String intentAction;
-                    if (newState == BluetoothProfile.STATE_CONNECTED) {
-                        //intentAction = ACTION_GATT_CONNECTED;
-                        mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_CONNECTED;
-                        final IntentFilter bondFilter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-                        mContext.registerReceiver(mBondStateBroadcastReceiver, bondFilter);
-                        //broadcastUpdate(intentAction);
-                        Log.i(TAG, "Connected to GATT server.");
-                        discoverServices();
-                        mBluetoothDevice.createBond();
-                    } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                        //intentAction = ACTION_GATT_DISCONNECTED;
-                        mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED;
-                        //disconnect();
-                        Log.i(TAG, "Disconnected from GATT server.");
-                        mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
-                        //broadcastUpdate(intentAction);
+
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        if (newState == BluetoothProfile.STATE_CONNECTED) {
+                            int bondState = mBluetoothDevice.getBondState();
+
+                            mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_CONNECTED;
+                            final IntentFilter bondFilter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+                            mContext.registerReceiver(mBondStateBroadcastReceiver, bondFilter);
+                            Log.i(TAG, "Connected to GATT server.");
+                            if (bondState != BluetoothDevice.BOND_BONDING) {
+                                discoverServices();
+                            }
+
+                        } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                            //intentAction = ACTION_GATT_DISCONNECTED;
+                            mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED;
+                            Log.i(TAG, "Disconnected from GATT server.");
+                            gatt.close();
+                            mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
+                            //broadcastUpdate(intentAction);
+                        }
+                    } else {
+                        gatt.close();
                     }
                 }
 
@@ -440,7 +450,7 @@ public class AmazonFreeRTOSDevice {
                         Log.i(TAG, "Discovered Ble gatt services successfully. Bonding state: "
                                 +mBluetoothDevice.getBondState());
                         describeGattServices(mBluetoothGatt.getServices());
-                        if (mBluetoothDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
+                        if (mBluetoothDevice.getBondState() != BluetoothDevice.BOND_BONDING) {
                             initialize();
                         }
                     } else {
@@ -483,7 +493,7 @@ public class AmazonFreeRTOSDevice {
                     mMaxPayloadLen = mMaxPayloadLen > 0 ? mMaxPayloadLen : 0;
                     enableService(UUID_NETWORK_SERVICE, true);
                     enableService(UUID_MQTT_PROXY_SERVICE, true);
-                    mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
+                    //mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
                     processNextBleCommand();
                 }
 
@@ -808,21 +818,18 @@ public class AmazonFreeRTOSDevice {
                 mIotMqttManager.subscribeToTopic(topic, qos, new AWSIotMqttNewMessageCallback() {
                     @Override
                     public void onMessageArrived(final String topic, final byte[] data) {
-                        try {
-                            String message = new String(data, "UTF-8");
-                            Log.i(TAG, " Message arrived on topic: " + topic);
-                            Log.v(TAG, "   Message: " + message);
-                            Publish publish = new Publish(
-                                    MQTT_MSG_PUBLISH,
-                                    topic,
-                                    mMessageId,
-                                    QoS,
-                                    data
-                            );
-                            publishToDevice(publish);
-                        } catch (UnsupportedEncodingException e) {
-                            Log.e(TAG, "Message encoding error.", e);
-                        }
+                        String message = new String(data, StandardCharsets.UTF_8);
+                        Log.i(TAG, " Message arrived on topic: " + topic);
+                        Log.v(TAG, "   Message: " + message);
+                        Publish publish = new Publish(
+                                MQTT_MSG_PUBLISH,
+                                topic,
+                                mMessageId,
+                                QoS,
+                                data
+                        );
+                        publishToDevice(publish);
+
                     }
                 });
             } catch (Exception e) {
@@ -942,6 +949,7 @@ public class AmazonFreeRTOSDevice {
     private void discoverServices() {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             sendBleCommand(new BleCommand(DISCOVER_SERVICES));
+            mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
         }
@@ -1076,48 +1084,50 @@ public class AmazonFreeRTOSDevice {
                         Log.d(TAG, "Processing BLE command: " + bleCommand.getType()
                                 + " remaining mqtt queue " + mMqttQueue.size()
                                 + ", network queue " + mNetworkQueue.size());
+
+                        boolean commandSent = false;
+                        switch (bleCommand.getType()) {
+                            case WRITE_DESCRIPTOR:
+                                if (writeDescriptor(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid())) {
+                                    commandSent = true;
+                                }
+                                break;
+                            case WRITE_CHARACTERISTIC:
+                                if (writeCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid(),
+                                        bleCommand.getData())) {
+                                    commandSent = true;
+                                }
+                                break;
+                            case READ_CHARACTERISTIC:
+                                if (readCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid())) {
+                                    commandSent = true;
+                                }
+                                break;
+                            case DISCOVER_SERVICES:
+                                if (mBluetoothGatt.discoverServices()) {
+                                    commandSent = true;
+                                } else {
+                                    Log.e(TAG, "Failed to discover services!");
+                                }
+                                break;
+                            case REQUEST_MTU:
+                                if (mBluetoothGatt.requestMtu(ByteBuffer.wrap(bleCommand.getData()).getInt())) {
+                                    commandSent = true;
+                                } else {
+                                    Log.e(TAG, "Failed to set MTU.");
+                                }
+                                break;
+                            default:
+                                Log.w(TAG, "Unknown Ble command, cannot process.");
+                        }
+
+                        if (commandSent) {
+                            mHandler.postDelayed(resetOperationInProgress, BLE_COMMAND_TIMEOUT);
+                        } else {
+                            mHandler.post(resetOperationInProgress);
+                        }
                     } catch (NullPointerException ex) {
                         Log.d(TAG, "no BLE command");
-                    }
-                    boolean commandSent = false;
-                    switch (bleCommand.getType()) {
-                        case WRITE_DESCRIPTOR:
-                            if (writeDescriptor(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid())) {
-                                commandSent = true;
-                            }
-                            break;
-                        case WRITE_CHARACTERISTIC:
-                            if (writeCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid(),
-                                    bleCommand.getData())) {
-                                commandSent = true;
-                            }
-                            break;
-                        case READ_CHARACTERISTIC:
-                            if (readCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid())) {
-                                commandSent = true;
-                            }
-                            break;
-                        case DISCOVER_SERVICES:
-                            if (mBluetoothGatt.discoverServices()) {
-                                commandSent = true;
-                            } else {
-                                Log.e(TAG, "Failed to discover services!");
-                            }
-                            break;
-                        case REQUEST_MTU:
-                            if (mBluetoothGatt.requestMtu(ByteBuffer.wrap(bleCommand.getData()).getInt())) {
-                                commandSent = true;
-                            } else {
-                                Log.e(TAG, "Failed to set MTU.");
-                            }
-                            break;
-                        default:
-                            Log.w(TAG, "Unknown Ble command, cannot process.");
-                    }
-                    if (commandSent) {
-                        mHandler.postDelayed(resetOperationInProgress, BLE_COMMAND_TIMEOUT);
-                    } else {
-                        mHandler.post(resetOperationInProgress);
                     }
                 }
             }
