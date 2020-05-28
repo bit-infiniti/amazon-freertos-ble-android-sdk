@@ -73,7 +73,7 @@ public class AmazonFreeRTOSConstants {
         BLE_CONNECTING,   // = 1
         BLE_CONNECTED,    // = 2
         BLE_DISCONNECTING, // = 3
-        BLE_INITIALIZED //= 4
+        BLE_INITIALIZED    //= 4
     }
 
     public enum AmazonFreeRTOSError {

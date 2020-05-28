@@ -22,6 +22,9 @@ import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.Switch;
 import android.widget.TextView;
+
+import com.amazonaws.auth.AWSCredentialsProvider;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -87,12 +90,14 @@ public class DeviceScanFragment extends Fragment {
                 boolean autoReconnect = false;
 
                 if (mConnStatus == ConnectionStatus.DISCONNECTED ) {
-                    mConnStatus = ConnectionStatus.CONNECTING;
-                    getActivity().runOnUiThread(() -> {
-                        mConnectionStatus.setText("Connecting");
-                    });
                     aDevice = mAmazonFreeRTOSManager.connectToDevice(mBleDevice.getBluetoothDevice(),
-                            connectionStatusCallback, autoReconnect);
+                            connectionStatusCallback, (AWSCredentialsProvider) null, autoReconnect);
+                    if (aDevice != null) {
+                        mConnStatus = ConnectionStatus.CONNECTING;
+                        getActivity().runOnUiThread(() -> {
+                            mConnectionStatus.setText("Connecting");
+                        });
+                    }
                 }
             });
 
@@ -259,6 +264,7 @@ public class DeviceScanFragment extends Fragment {
 
     private void scanBLEDevices() {
         Log.i(TAG, "scan started.");
+        mDevicePullToRefresh.setEnabled(false);
         mAmazonFreeRTOSManager.startScanDevices(new BleScanResultCallback() {
             @Override
             public void onBleScanResult(ScanResult result) {
@@ -270,6 +276,16 @@ public class DeviceScanFragment extends Fragment {
                     mBleDevices.add(thisDevice);
                     mBleDeviceAdapter.notifyDataSetChanged();
                 }
+            }
+            @Override
+            public void onBleScanFailed(int error) {
+                Log.d(TAG, String.format("scan failed %d", error));
+                mDevicePullToRefresh.setEnabled(true);
+            }
+
+            @Override
+            public void onBleScanStop() {
+                mDevicePullToRefresh.setEnabled(true);
             }
         }, 10000);
 

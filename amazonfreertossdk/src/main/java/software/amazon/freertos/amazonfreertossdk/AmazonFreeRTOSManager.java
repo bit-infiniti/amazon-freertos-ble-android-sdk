@@ -162,6 +162,9 @@ public class AmazonFreeRTOSManager {
         }
         Log.i(TAG, "Stopping ble device scan");
         mBluetoothLeScanner.stopScan(mScanCallback);
+        if (mBleScanResultCallback != null) {
+            mBleScanResultCallback.onBleScanStop();
+        }
         mScanning = false;
     }
 
@@ -182,23 +185,8 @@ public class AmazonFreeRTOSManager {
                 mBleScanResultCallback.onBleScanFailed(errorCode);
             }
         }
-    };
 
-    /**
-     * Connect to the BLE device, and notify the connection state via BleConnectionStatusCallback.
-     * @param connectionStatusCallback The callback to notify app whether the BLE connection is
-     *                                 successful. Must not be null.
-     * @param btDevice the BLE device to be connected to.
-     * @param autoReconnect auto reconnect to device after unexpected disconnect
-     */
-    public AmazonFreeRTOSDevice connectToDevice(@NonNull final BluetoothDevice btDevice,
-                                                @NonNull final BleConnectionStatusCallback connectionStatusCallback,
-                                                final boolean autoReconnect) {
-        AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, (AWSCredentialsProvider) null);
-        mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
-        aDevice.connect(connectionStatusCallback, autoReconnect);
-        return aDevice;
-    }
+    };
 
     /**
      * Connect to the BLE device, and notify the connection state via BleConnectionStatusCallback.
@@ -212,10 +200,14 @@ public class AmazonFreeRTOSManager {
                                 @NonNull final BleConnectionStatusCallback connectionStatusCallback,
                                                 final AWSCredentialsProvider cp,
                                                 final boolean autoReconnect) {
-        AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, cp);
-        mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
-        aDevice.connect(connectionStatusCallback, autoReconnect);
-        return aDevice;
+        if (!mScanning) {
+            AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, cp);
+            mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
+            aDevice.connect(connectionStatusCallback, autoReconnect);
+            return aDevice;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -230,10 +222,14 @@ public class AmazonFreeRTOSManager {
                                                 @NonNull final BleConnectionStatusCallback connectionStatusCallback,
                                                 final KeyStore ks,
                                                 final boolean autoReconnect) {
-        AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, ks);
-        mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
-        aDevice.connect(connectionStatusCallback, autoReconnect);
-        return aDevice;
+        if (!mScanning) {
+            AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, ks);
+            mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
+            aDevice.connect(connectionStatusCallback, autoReconnect);
+            return aDevice;
+        } else {
+            return null;
+        }
     }
 
     /**

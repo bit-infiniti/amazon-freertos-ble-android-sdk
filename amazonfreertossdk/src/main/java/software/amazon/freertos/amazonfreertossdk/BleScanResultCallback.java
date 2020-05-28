@@ -28,4 +28,6 @@ public abstract class BleScanResultCallback {
     public void onBleScanResult(ScanResult result){}
 
     public void onBleScanFailed(int errorcode) {}
+
+    public void onBleScanStop() {}
 }
