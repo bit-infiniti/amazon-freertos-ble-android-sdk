@@ -194,7 +194,7 @@ public class AmazonFreeRTOSManager {
     public AmazonFreeRTOSDevice connectToDevice(@NonNull final BluetoothDevice btDevice,
                                                 @NonNull final BleConnectionStatusCallback connectionStatusCallback,
                                                 final boolean autoReconnect) {
-        AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext);
+        AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, (AWSCredentialsProvider) null);
         mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
         aDevice.connect(connectionStatusCallback, autoReconnect);
         return aDevice;

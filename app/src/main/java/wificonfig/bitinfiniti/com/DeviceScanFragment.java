@@ -126,7 +126,7 @@ public class DeviceScanFragment extends Fragment {
             @Override
             public void onBleConnectionStatusChanged(AmazonFreeRTOSConstants.BleConnectionState connectionStatus) {
                 Log.i(TAG, "BLE connection status changed to: " + connectionStatus);
-                if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_CONNECTED) {
+                if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_INITIALIZED) {
                     mConnStatus = ConnectionStatus.CONNECTED;
                     try {
                         getActivity().runOnUiThread(() -> {
